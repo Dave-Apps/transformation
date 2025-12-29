@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>🏋️ Transformation Tracker</title>
+    <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Transformation&quot;,&quot;short_name&quot;:&quot;Transform&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%231a1a2e&quot;,&quot;theme_color&quot;:&quot;%23e94560&quot;}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #111827;
+            color: white;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+        .header {
+            background: linear-gradient(135deg, #db2777, #7c3aed);
+            padding: 16px;
+            text-align: center;
+        }
+        .header h1 { font-size: 24px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background: #1f2937;
+        }
+        .summary-card {
+            text-align: center;
+            padding: 12px 8px;
+            background: #374151;
+            border-radius: 8px;
+        }
+        .summary-card .value { font-size: 24px; font-weight: bold; }
+        .summary-card .label { font-size: 11px; color: #9ca3af; }
+        .summary-card .bar { height: 4px; background: #4b5563; border-radius: 2px; margin-top: 6px; }
+        .summary-card .bar-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
+        .green { color: #4ade80; }
+        .blue { color: #60a5fa; }
+        .yellow { color: #facc15; }
+        .purple { color: #a78bfa; }
+        
+        .content { padding: 16px; }
+        .content h2 { font-size: 20px; margin-bottom: 16px; }
+        .content h3 { font-size: 16px; margin: 16px 0 12px; }
+        
+        select, input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            background: #1f2937;
+            border: 2px solid #374151;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 12px;
+            -webkit-appearance: none;
+        }
+        select:focus, input:focus { border-color: #db2777; outline: none; }
+        input::placeholder { color: #6b7280; }
+        
+        .input-row { display: flex; gap: 12px; }
+        .input-row input { flex: 1; text-align: center; }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn-green { background: #16a34a; }
+        .btn-blue { background: #2563eb; }
+        .btn-purple { background: #7c3aed; }
+        .btn-small { width: auto; padding: 8px 16px; font-size: 14px; }
+        .btn:active { transform: scale(0.98); }
+        
+        .preview {
+            padding: 14px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .list { max-height: 280px; overflow-y: auto; }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #1f2937;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .list-item .name { font-weight: 500; }
+        .list-item .sub { font-size: 12px; color: #9ca3af; }
+        .list-item .values { display: flex; align-items: center; gap: 12px; }
+        .list-item .delete { color: #ef4444; font-size: 24px; padding: 0 8px; cursor: pointer; background: none; border: none; }
+        
+        .toggle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .toggle-btn {
+            padding: 14px;
+            border: 2px solid #374151;
+            border-radius: 8px;
+            background: #1f2937;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .toggle-btn.active { background: #16a34a; border-color: #16a34a; }
+        .toggle-btn.active-red { background: #dc2626; border-color: #dc2626; }
+        
+        .stats-card {
+            background: #1f2937;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-item { padding: 12px; background: #374151; border-radius: 8px; }
+        .stat-item .label { font-size: 12px; color: #9ca3af; }
+        .stat-item .value { font-size: 18px; font-weight: bold; }
+        
+        .week-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #1f2937;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .tips { padding: 16px; background: #1f2937; border-radius: 8px; }
+        .tips h3 { margin-bottom: 12px; }
+        .tips li { padding: 8px 0; font-size: 14px; color: #d1d5db; list-style: none; }
+        
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: #1f2937;
+            border-top: 2px solid #374151;
+        }
+        .nav-btn {
+            padding: 12px 0;
+            text-align: center;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .nav-btn.active { background: #db2777; color: white; }
+        .nav-btn .icon { font-size: 20px; }
+        .nav-btn .label { font-size: 11px; }
+        
+        .empty { text-align: center; padding: 32px; color: #6b7280; }
+        .hidden { display: none; }
+        
+        .history-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 0.7fr 0.7fr 0.7fr;
+            gap: 4px;
+            padding: 10px;
+            background: #1f2937;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏋️ Transformation</h1>
+        <p>120 kg → 95 kg | 29.12.25 - 31.03.26</p>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-card">
+            <div class="value green" id="todayKcal">0</div>
+            <div class="label">/ <span id="goalKcal">2140</span> kcal</div>
+            <div class="bar"><div class="bar-fill" id="kcalBar" style="background:#4ade80;width:0%"></div></div>
+        </div>
+        <div class="summary-card">
+            <div class="value blue" id="todayProt">0</div>
+            <div class="label">/ <span id="goalProt">192</span>g Prot</div>
+            <div class="bar"><div class="bar-fill" id="protBar" style="background:#60a5fa;width:0%"></div></div>
+        </div>
+        <div class="summary-card">
+            <div class="value yellow" id="todayEx">0</div>
+            <div class="label">Übungen</div>
+        </div>
+    </div>
+    
+    <div class="content">
+        <!-- FOOD TAB -->
+        <div id="tab-food">
+            <h2>🍽️ Essen eintragen</h2>
+            <select id="foodSelect">
+                <option value="">-- Lebensmittel wählen --</option>
+                <optgroup label="⭐ Favoriten" id="foodFav"></optgroup>
+                <optgroup label="🥩 Fleisch & Fisch" id="foodMeat"></optgroup>
+                <optgroup label="🥛 Milch & Eier" id="foodDairy"></optgroup>
+                <optgroup label="🥬 Gemüse & Rest" id="foodVeg"></optgroup>
+            </select>
+            <div class="input-row">
+                <input type="number" id="gramsInput" placeholder="Gramm" inputmode="numeric">
+                <button class="btn btn-green btn-small" onclick="addFood()">+</button>
+            </div>
+            <div class="preview hidden" id="foodPreview"></div>
+            <h3>📋 Heute (<span id="foodCount">0</span>)</h3>
+            <div class="list" id="foodList"></div>
+        </div>
+        
+        <!-- DAILY TAB -->
+        <div id="tab-daily" class="hidden">
+            <h2>📊 Tageswerte</h2>
+            <label style="font-size:12px;color:#9ca3af">Gewicht (kg)</label>
+            <input type="number" step="0.1" id="weightInput" placeholder="z.B. 118.5" inputmode="decimal">
+            <label style="font-size:12px;color:#9ca3af">Training heute?</label>
+            <div class="toggle-row">
+                <button class="toggle-btn active" id="trainYes" onclick="setTrained(true)">✅ Ja</button>
+                <button class="toggle-btn" id="trainNo" onclick="setTrained(false)">❌ Nein</button>
+            </div>
+            <div class="input-row">
+                <div style="flex:1">
+                    <label style="font-size:12px;color:#9ca3af">Cardio (Min)</label>
+                    <input type="number" id="cardioInput" placeholder="60" inputmode="numeric">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:12px;color:#9ca3af">Schlaf (Std)</label>
+                    <input type="number" step="0.5" id="sleepInput" placeholder="7.5" inputmode="decimal">
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="saveDaily()">💾 Tag speichern</button>
+            <h3>📅 Letzte Tage</h3>
+            <div id="dailyList"></div>
+        </div>
+        
+        <!-- TRAINING TAB -->
+        <div id="tab-training" class="hidden">
+            <h2>🏋️ Training</h2>
+            <select id="exerciseSelect" onchange="selectExercise()">
+                <option value="">-- Übung wählen --</option>
+                <optgroup label="💪 Push" id="exPush"></optgroup>
+                <optgroup label="🔙 Pull" id="exPull"></optgroup>
+                <optgroup label="🦵 Beine" id="exLegs"></optgroup>
+                <optgroup label="🏃 Cardio" id="exCardio"></optgroup>
+            </select>
+            <div class="input-row">
+                <div style="flex:1;text-align:center">
+                    <label style="font-size:11px;color:#9ca3af">Sätze</label>
+                    <input type="text" id="setsInput" placeholder="4">
+                </div>
+                <div style="flex:1;text-align:center">
+                    <label style="font-size:11px;color:#9ca3af">Wdh</label>
+                    <input type="text" id="repsInput" placeholder="10">
+                </div>
+                <div style="flex:1;text-align:center">
+                    <label style="font-size:11px;color:#9ca3af">Gewicht</label>
+                    <input type="text" id="exWeightInput" placeholder="60kg">
+                </div>
+            </div>
+            <button class="btn btn-purple" onclick="addTraining()">+ Übung hinzufügen</button>
+            <h3>💪 Heute (<span id="trainingCount">0</span> Übungen)</h3>
+            <div class="list" id="trainingList"></div>
+        </div>
+        
+        <!-- STATS TAB -->
+        <div id="tab-stats" class="hidden">
+            <h2>📈 Analyse</h2>
+            <div class="stats-card">
+                <h3 style="margin-bottom:12px">🎯 Deine Ziele</h3>
+                <div class="stats-grid">
+                    <div class="stat-item"><div class="label">Kalorien</div><div class="value green" id="statKcal">2140 kcal</div></div>
+                    <div class="stat-item"><div class="label">Protein</div><div class="value blue" id="statProt">192g</div></div>
+                    <div class="stat-item"><div class="label">Abnahme/Wo</div><div class="value yellow">0.8-1.2 kg</div></div>
+                    <div class="stat-item"><div class="label">Einträge</div><div class="value purple" id="statDays">0 Tage</div></div>
+                </div>
+            </div>
+            <h3>📊 Wochen-Übersicht</h3>
+            <div id="weekList"></div>
+            <div class="tips">
+                <h3>💡 Tipps bei Stillstand</h3>
+                <ul>
+                    <li>⏳ 2 Wo gleich → <span class="yellow">Abwarten, Maße checken</span></li>
+                    <li>📉 3 Wo gleich → <span style="color:#f97316">Kalorien -150</span></li>
+                    <li>🏃 Immer noch → <span style="color:#ef4444">+15 Min Cardio/Tag</span></li>
+                    <li>🍽️ Refeed → <span class="green">1 Tag mehr KH (alle 10-14 Tage)</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="nav">
+        <button class="nav-btn active" onclick="showTab('food')" id="nav-food">
+            <div class="icon">🍽️</div>
+            <div class="label">Essen</div>
+        </button>
+        <button class="nav-btn" onclick="showTab('daily')" id="nav-daily">
+            <div class="icon">📊</div>
+            <div class="label">Tag</div>
+        </button>
+        <button class="nav-btn" onclick="showTab('training')" id="nav-training">
+            <div class="icon">🏋️</div>
+            <div class="label">Training</div>
+        </button>
+        <button class="nav-btn" onclick="showTab('stats')" id="nav-stats">
+            <div class="icon">📈</div>
+            <div class="label">Analyse</div>
+        </button>
+    </nav>
+
+<script>
+// Data
+const FOODS = [
+    { name: 'Magerquark', kcal: 67, protein: 12, cat: 'fav' },
+    { name: 'Hähnchenbrust gegart', kcal: 165, protein: 31, cat: 'fav' },
+    { name: 'Reis gekocht', kcal: 130, protein: 2.7, cat: 'fav' },
+    { name: 'Ei (1St=60g)', kcal: 143, protein: 13, cat: 'fav' },
+    { name: 'Thunfisch Dose', kcal: 100, protein: 24, cat: 'fav' },
+    { name: 'Skyr', kcal: 63, protein: 11, cat: 'fav' },
+    { name: 'Vollkornbrot', kcal: 230, protein: 9, cat: 'fav' },
+    { name: 'Banane', kcal: 89, protein: 1, cat: 'fav' },
+    { name: 'Brokkoli', kcal: 34, protein: 3, cat: 'fav' },
+    { name: 'Kartoffeln', kcal: 73, protein: 2, cat: 'fav' },
+    { name: 'Putenbrust', kcal: 107, protein: 24, cat: 'fav' },
+    { name: 'Hüttenkäse', kcal: 98, protein: 13, cat: 'fav' },
+    { name: 'Rinderhack mager', kcal: 152, protein: 20, cat: 'fav' },
+    { name: 'Beeren TK', kcal: 40, protein: 1, cat: 'fav' },
+    { name: 'Nudeln gekocht', kcal: 150, protein: 5, cat: 'fav' },
+    { name: 'Gurke', kcal: 12, protein: 0.6, cat: 'fav' },
+    { name: 'Tomate', kcal: 18, protein: 1, cat: 'fav' },
+    { name: 'Apfel', kcal: 52, protein: 0.3, cat: 'fav' },
+    { name: 'Olivenöl 1EL=10g', kcal: 884, protein: 0, cat: 'fav' },
+    { name: 'Proteinshake', kcal: 120, protein: 24, cat: 'fav' },
+    { name: 'Hähnchenbrust roh', kcal: 110, protein: 23, cat: 'meat' },
+    { name: 'Rindersteak', kcal: 121, protein: 22, cat: 'meat' },
+    { name: 'Schweinefilet', kcal: 104, protein: 22, cat: 'meat' },
+    { name: 'Lachs', kcal: 208, protein: 20, cat: 'meat' },
+    { name: 'Seelachs TK', kcal: 83, protein: 18, cat: 'meat' },
+    { name: 'Garnelen', kcal: 85, protein: 18, cat: 'meat' },
+    { name: 'Harzer Käse', kcal: 126, protein: 27, cat: 'dairy' },
+    { name: 'Griech Joghurt 0%', kcal: 57, protein: 10, cat: 'dairy' },
+    { name: 'Milch 1.5%', kcal: 47, protein: 3.4, cat: 'dairy' },
+    { name: 'Eiklar 100g', kcal: 47, protein: 11, cat: 'dairy' },
+    { name: 'Mozzarella light', kcal: 185, protein: 20, cat: 'dairy' },
+    { name: 'Süßkartoffeln', kcal: 86, protein: 1.6, cat: 'veg' },
+    { name: 'Haferflocken', kcal: 372, protein: 13, cat: 'veg' },
+    { name: 'Spinat', kcal: 23, protein: 3, cat: 'veg' },
+    { name: 'Zucchini', kcal: 17, protein: 1.2, cat: 'veg' },
+    { name: 'Champignons', kcal: 22, protein: 3, cat: 'veg' },
+    { name: 'Paprika', kcal: 28, protein: 1, cat: 'veg' },
+    { name: 'Kidneybohnen', kcal: 100, protein: 7, cat: 'veg' },
+    { name: 'Linsen gekocht', kcal: 116, protein: 9, cat: 'veg' },
+];
+
+const EXERCISES = [
+    { name: 'Bankdrücken LH', type: 'push', sets: '4', reps: '8-10' },
+    { name: 'Schrägbank KH', type: 'push', sets: '3', reps: '10-12' },
+    { name: 'Schulterdrücken', type: 'push', sets: '4', reps: '8-10' },
+    { name: 'Seitheben', type: 'push', sets: '3', reps: '12-15' },
+    { name: 'Dips', type: 'push', sets: '3', reps: '8-12' },
+    { name: 'Trizeps Push', type: 'push', sets: '3', reps: '10-12' },
+    { name: 'Face Pulls', type: 'push', sets: '3', reps: '15-20' },
+    { name: 'Latzug breit', type: 'pull', sets: '4', reps: '8-10' },
+    { name: 'Rudern Maschine', type: 'pull', sets: '4', reps: '8-10' },
+    { name: 'Rudern 1-arm', type: 'pull', sets: '3', reps: '10-12' },
+    { name: 'Latzug eng', type: 'pull', sets: '3', reps: '10-12' },
+    { name: 'Bizeps Curls', type: 'pull', sets: '3', reps: '8-10' },
+    { name: 'Hammer Curls', type: 'pull', sets: '3', reps: '10-12' },
+    { name: 'Reverse Flys', type: 'pull', sets: '3', reps: '12-15' },
+    { name: 'Beinpresse', type: 'legs', sets: '4', reps: '10-12' },
+    { name: 'Ausfallschritte', type: 'legs', sets: '3', reps: '10-12' },
+    { name: 'Beinstrecker', type: 'legs', sets: '3', reps: '12-15' },
+    { name: 'Beinbeuger', type: 'legs', sets: '4', reps: '10-12' },
+    { name: 'Wadenheben', type: 'legs', sets: '4', reps: '12-15' },
+    { name: 'Hip Thrusts', type: 'legs', sets: '3', reps: '10-12' },
+    { name: 'Cardio LISS', type: 'cardio', sets: '-', reps: '45-60 Min' },
+    { name: 'Cardio HIIT', type: 'cardio', sets: '-', reps: '20-30 Min' },
+];
+
+// State
+let foodLog = JSON.parse(localStorage.getItem('foodLog') || '[]');
+let dailyLog = JSON.parse(localStorage.getItem('dailyLog') || '[]');
+let trainingLog = JSON.parse(localStorage.getItem('trainingLog') || '[]');
+let trained = true;
+
+const today = new Date().toISOString().split('T')[0];
+const startWeight = 120;
+const goalKcal = Math.round(startWeight * 22 - 500);
+const goalProtein = Math.round(startWeight * 1.6);
+
+// Init
+function init() {
+    document.getElementById('goalKcal').textContent = goalKcal;
+    document.getElementById('goalProt').textContent = goalProtein;
+    document.getElementById('statKcal').textContent = goalKcal + ' kcal';
+    document.getElementById('statProt').textContent = goalProtein + 'g';
+    
+    // Populate food select
+    const cats = { fav: 'foodFav', meat: 'foodMeat', dairy: 'foodDairy', veg: 'foodVeg' };
+    FOODS.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.name;
+        opt.textContent = `${f.name} (${f.kcal} kcal, ${f.protein}g)`;
+        document.getElementById(cats[f.cat]).appendChild(opt);
+    });
+    
+    // Populate exercise select
+    const exCats = { push: 'exPush', pull: 'exPull', legs: 'exLegs', cardio: 'exCardio' };
+    EXERCISES.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.name;
+        opt.textContent = e.name;
+        document.getElementById(exCats[e.type]).appendChild(opt);
+    });
+    
+    // Food preview
+    document.getElementById('foodSelect').addEventListener('change', updatePreview);
+    document.getElementById('gramsInput').addEventListener('input', updatePreview);
+    
+    updateAll();
+}
+
+function updatePreview() {
+    const foodName = document.getElementById('foodSelect').value;
+    const grams = parseFloat(document.getElementById('gramsInput').value) || 0;
+    const preview = document.getElementById('foodPreview');
+    
+    if (foodName && grams) {
+        const food = FOODS.find(f => f.name === foodName);
+        const kcal = Math.round(food.kcal * grams / 100);
+        const prot = Math.round(food.protein * grams / 100 * 10) / 10;
+        preview.innerHTML = `= <span class="green"><b>${kcal} kcal</b></span> + <span class="blue"><b>${prot}g Protein</b></span>`;
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+function save() {
+    localStorage.setItem('foodLog', JSON.stringify(foodLog));
+    localStorage.setItem('dailyLog', JSON.stringify(dailyLog));
+    localStorage.setItem('trainingLog', JSON.stringify(trainingLog));
+}
+
+function updateAll() {
+    updateSummary();
+    updateFoodList();
+    updateDailyList();
+    updateTrainingList();
+    updateStats();
+}
+
+function updateSummary() {
+    const todayFood = foodLog.filter(f => f.date === today);
+    const kcal = todayFood.reduce((s, f) => s + f.kcal, 0);
+    const prot = todayFood.reduce((s, f) => s + f.protein, 0);
+    const ex = trainingLog.filter(t => t.date === today).length;
+    
+    document.getElementById('todayKcal').textContent = kcal;
+    document.getElementById('todayProt').textContent = Math.round(prot) + 'g';
+    document.getElementById('todayEx').textContent = ex;
+    document.getElementById('kcalBar').style.width = Math.min(kcal / goalKcal * 100, 100) + '%';
+    document.getElementById('protBar').style.width = Math.min(prot / goalProtein * 100, 100) + '%';
+}
+
+function updateFoodList() {
+    const list = document.getElementById('foodList');
+    const todayFood = foodLog.filter(f => f.date === today);
+    document.getElementById('foodCount').textContent = todayFood.length;
+    
+    if (todayFood.length === 0) {
+        list.innerHTML = '<div class="empty">Noch keine Einträge heute</div>';
+        return;
+    }
+    
+    list.innerHTML = todayFood.map(f => `
+        <div class="list-item">
+            <div>
+                <div class="name">${f.food}</div>
+                <div class="sub">${f.grams}g</div>
+            </div>
+            <div class="values">
+                <div style="text-align:right">
+                    <div class="green"><b>${f.kcal} kcal</b></div>
+                    <div class="blue" style="font-size:12px">${f.protein}g</div>
+                </div>
+                <button class="delete" onclick="deleteFood(${f.id})">×</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateDailyList() {
+    const list = document.getElementById('dailyList');
+    const recent = [...dailyLog].reverse().slice(0, 7);
+    
+    if (recent.length === 0) {
+        list.innerHTML = '<div class="empty">Noch keine Einträge</div>';
+        return;
+    }
+    
+    list.innerHTML = recent.map(d => `
+        <div class="history-row">
+            <span style="color:#9ca3af">${d.date.slice(5)}</span>
+            <span class="yellow"><b>${d.weight}kg</b></span>
+            <span>${d.trained ? '✅' : '❌'}</span>
+            <span>${d.cardio}min</span>
+            <span>${d.sleep}h</span>
+        </div>
+    `).join('');
+}
+
+function updateTrainingList() {
+    const list = document.getElementById('trainingList');
+    const todayTrain = trainingLog.filter(t => t.date === today);
+    document.getElementById('trainingCount').textContent = todayTrain.length;
+    
+    if (todayTrain.length === 0) {
+        list.innerHTML = '<div class="empty">Noch kein Training heute</div>';
+        return;
+    }
+    
+    list.innerHTML = todayTrain.map(t => `
+        <div class="list-item">
+            <div class="name">${t.exercise}</div>
+            <div class="values">
+                <span style="color:#9ca3af">${t.sets}×${t.reps}</span>
+                <span class="yellow"><b>${t.weight}</b></span>
+                <button class="delete" onclick="deleteTraining(${t.id})">×</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateStats() {
+    document.getElementById('statDays').textContent = dailyLog.length + ' Tage';
+    
+    const weeks = [];
+    const sorted = [...dailyLog].sort((a, b) => new Date(a.date) - new Date(b.date));
+    for (let i = 0; i < sorted.length; i += 7) {
+        const weekDays = sorted.slice(i, i + 7);
+        if (weekDays.length > 0) {
+            const startW = weekDays[0]?.weight;
+            const endW = weekDays[weekDays.length - 1]?.weight;
+            const delta = startW && endW ? (startW - endW).toFixed(1) : '-';
+            weeks.push({ week: weeks.length + 1, start: startW, end: endW, delta });
+        }
+    }
+    
+    const weekList = document.getElementById('weekList');
+    if (weeks.length === 0) {
+        weekList.innerHTML = '<div class="empty">Trage täglich dein Gewicht ein!</div>';
+        return;
+    }
+    
+    weekList.innerHTML = weeks.map(w => {
+        const good = parseFloat(w.delta) >= 0.8 && parseFloat(w.delta) <= 1.2;
+        return `
+            <div class="week-item">
+                <span class="purple"><b>Woche ${w.week}</b></span>
+                <span style="color:#9ca3af">${w.start} → ${w.end} kg</span>
+                <span class="${good ? 'green' : 'yellow'}"><b>${w.delta !== '-' ? '-' + w.delta + ' kg' : '-'}</b> ${good ? '✅' : w.delta !== '-' ? '⚠️' : ''}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Actions
+function addFood() {
+    const foodName = document.getElementById('foodSelect').value;
+    const grams = parseFloat(document.getElementById('gramsInput').value);
+    if (!foodName || !grams) return;
+    
+    const food = FOODS.find(f => f.name === foodName);
+    foodLog.push({
+        id: Date.now(),
+        date: today,
+        food: foodName,
+        grams,
+        kcal: Math.round(food.kcal * grams / 100),
+        protein: Math.round(food.protein * grams / 100 * 10) / 10
+    });
+    
+    save();
+    updateAll();
+    document.getElementById('foodSelect').value = '';
+    document.getElementById('gramsInput').value = '';
+    document.getElementById('foodPreview').classList.add('hidden');
+}
+
+function deleteFood(id) {
+    foodLog = foodLog.filter(f => f.id !== id);
+    save();
+    updateAll();
+}
+
+function setTrained(val) {
+    trained = val;
+    document.getElementById('trainYes').className = 'toggle-btn' + (val ? ' active' : '');
+    document.getElementById('trainNo').className = 'toggle-btn' + (!val ? ' active-red' : '');
+}
+
+function saveDaily() {
+    const weight = parseFloat(document.getElementById('weightInput').value);
+    if (!weight) { alert('Bitte Gewicht eingeben'); return; }
+    
+    const cardio = parseInt(document.getElementById('cardioInput').value) || 0;
+    const sleep = parseFloat(document.getElementById('sleepInput').value) || 0;
+    
+    const existing = dailyLog.findIndex(d => d.date === today);
+    const entry = { date: today, weight, trained, cardio, sleep };
+    
+    if (existing >= 0) {
+        dailyLog[existing] = entry;
+    } else {
+        dailyLog.push(entry);
+    }
+    
+    save();
+    updateAll();
+    document.getElementById('weightInput').value = '';
+    document.getElementById('cardioInput').value = '';
+    document.getElementById('sleepInput').value = '';
+    alert('✅ Gespeichert!');
+}
+
+function selectExercise() {
+    const name = document.getElementById('exerciseSelect').value;
+    const ex = EXERCISES.find(e => e.name === name);
+    if (ex) {
+        document.getElementById('setsInput').value = ex.sets;
+        document.getElementById('repsInput').value = ex.reps;
+    }
+}
+
+function addTraining() {
+    const exercise = document.getElementById('exerciseSelect').value;
+    if (!exercise) return;
+    
+    trainingLog.push({
+        id: Date.now(),
+        date: today,
+        exercise,
+        sets: document.getElementById('setsInput').value,
+        reps: document.getElementById('repsInput').value,
+        weight: document.getElementById('exWeightInput').value
+    });
+    
+    save();
+    updateAll();
+    document.getElementById('exerciseSelect').value = '';
+    document.getElementById('setsInput').value = '';
+    document.getElementById('repsInput').value = '';
+    document.getElementById('exWeightInput').value = '';
+}
+
+function deleteTraining(id) {
+    trainingLog = trainingLog.filter(t => t.id !== id);
+    save();
+    updateAll();
+}
+
+function showTab(tab) {
+    ['food', 'daily', 'training', 'stats'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+        document.getElementById('nav-' + t).classList.toggle('active', t === tab);
+    });
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
